@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>عملیات روی مجموعه‌ها — نمایشگاه</title>
+<style>
+body{font-family:'Tahoma',sans-serif; background:#fffafc; color:#111; padding:20px;}
+h2{color:#7b1fa2;}
+.card{background:#fff;border-radius:12px;padding:14px;box-shadow:0 10px 28px rgba(12,12,12,0.06);margin-bottom:12px;}
+select,input,button{padding:8px;border-radius:6px;border:1px solid #eee;font-size:15px;}
+button{background:#7b1fa2;color:#fff;border:none;cursor:pointer;}
+.small-btns{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:6px;}
+.result-box{background:#fbf7ff;padding:10px;border-radius:8px;margin-top:10px;}
+#vennCanvas,#axisCanvas{width:100%; height:200px; background:#fff; margin-top:10px;}
+</style>
+</head>
+<body>
+
+<h2>عملیات روی مجموعه‌ها</h2>
+
+<div class="card">
+  <label>انتخاب عمل</label>
+  <select id="operation">
+    <option value="">انتخاب کنید...</option>
+    <option value="union">اجتماع (A ∪ B)</option>
+    <option value="intersection">اشتراک (A ∩ B)</option>
+    <option value="difference">تفاضل (A − B)</option>
+    <option value="subset">آیا A زیرمجموعهٔ B است؟ (A ⊂ B)</option>
+  </select>
+
+  <div class="small-btns">
+    <button onclick="computeOperation('union')">∪</button>
+    <button onclick="computeOperation('intersection')">∩</button>
+    <button onclick="computeOperation('difference')">−</button>
+    <button onclick="computeOperation('subset')">⊂</button>
+  </div>
+
+  <div id="resultBox" class="result-box"></div>
+  <div id="explanationBox" class="result-box"></div>
+
+  <button onclick="showVenn()">نمایش نمودار ون</button>
+  <canvas id="vennCanvas"></canvas>
+  <button onclick="showAxis()">نمایش محور</button>
+  <canvas id="axisCanvas"></canvas>
+</div>
+
+<script>
+// خواندن مجموعه A از localStorage
+let setA = {type:'unknown', members:[]};
+const exprA = localStorage.getItem("setA_expr");
+if(exprA){
+  const nums = exprA.match(/-?\d+/g);
+  if(nums) setA = {type:'finite', members:Array.from(new Set(nums.map(Number)))};
+}
+
+// خواندن B نمونه
+let setB = {type:'finite', members:[1,2,3,4]}; // نمونه ساده
+
+function computeOperation(op){
+  const resultBox = document.getElementById("resultBox");
+  const explBox = document.getElementById("explanationBox");
+  resultBox.innerHTML=""; explBox.innerHTML="";
+  let C=[];
+  if(op==='union') C=[...new Set([...setA.members,...setB.members])].sort((a,b)=>a-b);
+  if(op==='intersection') C=setA.members.filter(x=>setB.members.includes(x)).sort((a,b)=>a-b);
+  if(op==='difference') C=setA.members.filter(x=>!setB.members.includes(x)).sort((a,b)=>a-b);
+  if(op==='subset'){ C=isSubset(setA.members,setB.members); resultBox.innerHTML="A ⊂ B ? : "+(C?"بله":"خیر"); return;}
+  resultBox.innerHTML="نتیجه: { "+C.join(', ')+" }";
+  explBox.innerHTML="توضیح: این مجموعه نتیجه عمل "+op+" روی A و B است.";
+}
+
+function isSubset(A,B){return A.every(x=>B.includes(x));}
+
+// نمودار ون برای عملیات
+function showVenn(){
+  const canvas = document.getElementById("vennCanvas");
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  let cx=canvas.width/2, cy=canvas.height/2, r=60;
+  // دو دایره
+  ctx.globalAlpha=0.3;
+  ctx.fillStyle="blue"; ctx.beginPath(); ctx.arc(cx-40,cy,r,0,2*Math.PI); ctx.fill();
+  ctx.fillStyle="red"; ctx.beginPath(); ctx.arc(cx+40,cy,r,0,2*Math.PI); ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.strokeStyle="black";
+  ctx.lineWidth=2;
+  ctx.stroke();
+}
+
+// محور عددی
+function showAxis(){
+  const canvas=document.getElementById("axisCanvas");
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  let startX=50,endX=canvas.width-50,y=100;
+  ctx.beginPath(); ctx.moveTo(startX,y); ctx.lineTo(endX,y); ctx.strokeStyle="black"; ctx.lineWidth=2; ctx.stroke();
+  const ticks=[-3,-2,-1,0,1,2,3]; const spacing=(endX-startX)/6;
+  ticks.forEach((num,i)=>{
+    ctx.beginPath(); ctx.arc(startX+i*spacing,y,6,0,2*Math.PI); ctx.fillStyle="black"; ctx.fill();
+    ctx.font="14px Tahoma"; ctx.fillText(num,startX+i*spacing-5,y+25);
+  });
+}
+</script>
+</body>
+</html>
